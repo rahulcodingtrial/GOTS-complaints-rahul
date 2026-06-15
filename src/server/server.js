@@ -2,16 +2,22 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { connectDB, insertComplaint, getGridFSBucket } from './db.js';
 import { createZendeskTicket, testZendeskConnection } from './zendesk.js';
 
 dotenv.config();
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '../../dist')));
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const storage = multer.memoryStorage();
@@ -88,12 +94,12 @@ app.post('/api/complaints', upload.array('files', 5), async (req, res) => {
     const result = await insertComplaint(complaintData);
     const complaintId = result.insertedId.toString();
 
-    // Create Zendesk ticket (optional - doesn't block submission if it fails)
+    // Create Zendesk ticket with files (optional - doesn't block submission if it fails)
     let zendeskInfo = null;
     if (process.env.ZENDESK_API_TOKEN) {
       try {
         const complaint = { ...complaintData, _id: complaintId };
-        zendeskInfo = await createZendeskTicket(complaint);
+        zendeskInfo = await createZendeskTicket(complaint, req.files || []);
         console.log('✓ Zendesk ticket created successfully');
       } catch (zendeskError) {
         console.warn(
@@ -193,6 +199,11 @@ app.use((err, req, res, next) => {
     error: 'Internal server error',
     message: err.message,
   });
+});
+
+// Serve index.html for all non-API routes (client-side routing)
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../dist/index.html'));
 });
 
 // Start server
