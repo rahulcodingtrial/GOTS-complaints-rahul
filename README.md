@@ -2,34 +2,34 @@
 
 A modern, whistleblower-friendly complaints intake system for Global Organic Textile Standard (GOTS). Built with React, Redux, Tailwind CSS, Node.js, MongoDB Atlas, and integrated with Zendesk for ticket management.
 
+**Status:** ✅ Production Ready
+
 ## Features
 
 - **7-Step Wizard Interface**: Intuitive step-by-step complaint intake process
 - **Five Complaint Categories**: Labor violations, OHS, Environmental, Business ethics, Trademark misuse
 - **File Uploads**: Support for up to 5 files per complaint (10MB max, stored in MongoDB GridFS)
-- **Zendesk Integration**: Automatic ticket creation from complaints
+- **Zendesk Integration**: Automatic ticket creation with files attached as comments
 - **Whistleblower-Friendly**: Clear confidentiality options and identity protection
 - **Mobile Responsive**: Works seamlessly on desktop, tablet, and mobile
 - **Modern Design**: Following GOTS brand standards with clean, professional UI
 - **Motivation Verification**: Filter frivolous reports and business rivalries
 - **No AI Token Costs**: Pure client-side logic, no expensive API calls
+- **Single Server Deployment**: Frontend and backend run on one port in production
 
 ## Quick Start
 
 ### Prerequisites
 
 - Node.js 16+
-- MongoDB Atlas account (shared cluster available)
-- Zendesk trial or paid account
+- MongoDB Atlas account (shared cluster: `gots-trial.jfoz0n7.mongodb.net`)
+- Zendesk account with API token
 - Git
 
 ### Installation
 
 ```bash
-# Navigate to project directory
 cd GOTS-Complaints
-
-# Install dependencies
 npm install
 ```
 
@@ -40,54 +40,53 @@ npm install
 cp .env.example .env
 ```
 
-2. Update `.env` with your credentials:
+2. Update `.env` with credentials:
 ```env
-# Server
 PORT=3000
 NODE_ENV=development
 
-# MongoDB Atlas (shared cluster from GOTS-faq-rahul project)
+# MongoDB Atlas
 MONGODB_USER=RahulTrialAdmin
-MONGODB_PASSWORD=your_mongodb_password
+MONGODB_PASSWORD=your_password
 MONGODB_CLUSTER=gots-trial.jfoz0n7.mongodb.net
 MONGODB_DATABASE=gots_complaints
 MONGODB_APP_NAME=GOTS-Complaints
 
-# Zendesk Integration
+# Zendesk (enable "Allow API token access" in Admin > Apps > APIs > Zendesk API)
 ZENDESK_SUBDOMAIN=gots
 ZENDESK_EMAIL=your_email@domain.com
-ZENDESK_API_TOKEN=your_api_token
+ZENDESK_API_TOKEN=your_token_here
 
 # File Upload
 MAX_FILE_SIZE=10485760
 MAX_FILES_PER_COMPLAINT=5
 ```
 
+**Important:** Get Zendesk API token from Admin → Apps and Integrations → APIs → Zendesk API.
+
 ### Development
 
 ```bash
-# Start dev server (Vite frontend + Express backend)
 npm run dev
 ```
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3000
+Runs frontend (Vite) on `http://localhost:5173` and backend (Express) on `http://localhost:3000` concurrently with hot reload.
 
-### Production Build
+### Production
 
 ```bash
-# Build frontend
-npm run build
+npm run build  # Build React frontend → dist/
+npm start      # Start single server on port 3000
 ```
 
-Output goes to `dist/` directory. Deploy to any static host (Netlify, Vercel, S3, etc.).
+In production, Express serves the built React frontend as static files AND handles API routes on the same port.
 
 ## Project Structure
 
 ```
 src/
 ├── components/
-│   ├── steps/              # 7 wizard step components
+│   ├── steps/                    # 7 wizard step components
 │   │   ├── Step1Welcome.jsx
 │   │   ├── Step2Category.jsx
 │   │   ├── Step3Questions.jsx    # Category-specific Q&A
@@ -97,7 +96,7 @@ src/
 │   │   └── Step7Review.jsx
 │   ├── Header.jsx
 │   ├── Footer.jsx
-│   ├── ComplaintsWizard.jsx      # Main wizard logic
+│   ├── ComplaintsWizard.jsx      # Main wizard orchestrator
 │   ├── StepIndicator.jsx         # Progress tracking
 │   └── SuccessMessage.jsx
 ├── redux/
@@ -105,9 +104,9 @@ src/
 │   └── slices/
 │       └── complaintSlice.js     # Complaint state management
 ├── server/
-│   ├── server.js                 # Express API
-│   ├── db.js                     # MongoDB + GridFS
-│   └── zendesk.js                # Zendesk integration
+│   ├── server.js                 # Express API + static file serving
+│   ├── db.js                     # MongoDB + GridFS connection
+│   └── zendesk.js                # Zendesk integration (file upload + ticket creation)
 ├── styles/
 │   └── index.css                 # Tailwind + custom styles
 └── main.jsx                      # React entry point
@@ -115,80 +114,24 @@ src/
 
 ## The 7-Step Wizard
 
-### Step 1: Welcome
-- Introduction emphasizing whistleblower protection
-- Overview of process and confidentiality options
+| Step | Purpose | Key Features |
+|------|---------|--------------|
+| 1 | Welcome | Whistleblower assurance, process overview |
+| 2 | Category | Choose from 5 complaint types with icons |
+| 3 | Questions | Category-specific Q&A (4 questions each) |
+| 4 | Files | Drag-drop upload (5 files, 10MB max, **mandatory**) |
+| 5 | Contact | Email (required), name & org (optional) |
+| 6 | Privacy | Confidentiality choice + motivation verification |
+| 7 | Review | Full summary, confirm, submit |
 
-### Step 2: Category Selection
-- Choose from 5 complaint types with icons and descriptions
-- Visual category cards for easy selection
+## Complaint Categories & Zendesk Subject Lines
 
-### Step 3: Category-Specific Questions
-- Dynamically shown questions based on selected category
-- Mix of textarea, text input, and dropdown questions
-- Visual cards with icons for each question
-- Real-time validation
+Subject lines follow format: `[Category] Key Issue - Organization`
 
-### Step 4: File Upload
-- Drag-and-drop interface
-- Multiple file support (max 5 files, 10MB each)
-- Supported formats: JPG, PNG, GIF, PDF, DOCX, XLSX, TXT
-- Mandatory step (at least 1 file required)
-- GridFS storage for reliability
-
-### Step 5: Contact Information
-- Email address (required)
-- Name (optional)
-- Organization (optional)
-- Email validation
-
-### Step 6: Privacy & Verification
-- Confidentiality options (public or confidential)
-- Motivation verification:
-  - Employee
-  - Contractor/Supplier
-  - Customer/Consumer
-  - Community stakeholder
-  - External observer
-- Filters business rivalries from genuine concerns
-
-### Step 7: Review & Submit
-- Full complaint summary
-- Confirmation of all details
-- Submit button with error handling
-- Success message on completion
-
-## Complaint Categories & Questions
-
-### Labor Violations
-- Excessive overtime
-- Wage/compensation issues
-- Discrimination or harassment
-- Forced labor suspicions
-
-### Health & Safety (OHS)
-- Type of hazard observed
-- Work-related injuries
-- Reporting status
-- Specific location
-
-### Environmental Issues
-- Violation description
-- Location
-- Environmental impact
-- Evidence availability
-
-### Business Ethics & Corruption
-- Violation description
-- Parties involved
-- Beneficiaries
-- Documentation
-
-### Trademark/Logo Misuse
-- Brand/product name
-- Misuse description
-- Discovery location
-- Evidence availability
+**Examples:**
+- `[Labor Violations] Workers forced to work 14 hour shifts - Manufacturing Corp`
+- `[Environmental Issues] Illegal dumping into groundwater - Chemical Plant`
+- `[Health & Safety] Exposed electrical wiring - Factory XYZ`
 
 ## Database Schema
 
@@ -196,26 +139,26 @@ src/
 ```javascript
 {
   _id: ObjectId,
-  category: String,              // "labor" | "ohs" | "environmental" | "ethics" | "trademark"
-  email: String,                 // Required, validated
-  name: String,                  // Optional
-  organization: String,          // Optional
-  confidential: Boolean,         // Identity protection flag
-  answers: Object,               // Category-specific answers
-  fileCount: Number,             // Number of uploaded files
-  fileNames: Array,              // Original filenames
-  ipAddress: String,             // For spam detection
-  submittedAt: Date,            // Submission timestamp
-  status: String                 // "submitted" | "reviewed" | "investigating"
+  category: String,           // "labor" | "ohs" | "environmental" | "ethics" | "trademark"
+  email: String,              // Required
+  name: String,               // Optional
+  organization: String,       // Optional
+  confidential: Boolean,      // Identity protection flag
+  answers: Object,            // Category-specific Q&A
+  fileCount: Number,          // Number of uploaded files
+  fileNames: Array,           // Original filenames
+  ipAddress: String,          // For spam detection
+  submittedAt: Date,         // Submission timestamp
+  status: String             // "submitted" | "reviewed" | "investigating"
 }
 ```
 
-### Files (GridFS Storage)
-Files are stored separately in GridFS with metadata linking to complaint ID:
+### Files (MongoDB GridFS)
+Files are stored separately with metadata:
 ```javascript
 {
   filename: String,
-  complaintId: ObjectId,
+  complaintId: ObjectId,     // Reference to complaint
   mimeType: String,
   uploadedAt: Date,
   size: Number
@@ -226,247 +169,212 @@ Files are stored separately in GridFS with metadata linking to complaint ID:
 
 ### Public Endpoints
 
-- **POST** `/api/complaints` - Submit a new complaint
-  - Body: `multipart/form-data`
-  - Fields: category, email, name, organization, confidential, answers, files
-  - Returns: complaintId, zendesk (if created)
+- **POST** `/api/complaints` - Submit complaint with files
+  - Content-Type: `multipart/form-data`
+  - Fields: category, email, name, organization, confidential, answers (JSON string), files
+  - Returns: `{success, complaintId, zendesk: {success, ticketId, filesAttached, zendeskUrl}}`
 
 - **GET** `/api/health` - Health check
-  - Returns: API status
+  - Returns: `{status: "ok", message: "GOTS Complaints API"}`
 
 - **GET** `/api/zendesk-test` - Test Zendesk connection
-  - Returns: Connection status
-
-### Protected Endpoints (Admin - Future)
-
-- **GET** `/api/complaints/:id` - Retrieve complaint details
-- **PUT** `/api/complaints/:id` - Update complaint status
-- **GET** `/api/complaints` - List all complaints (with filtering)
+  - Returns: `{success: boolean, message: string}`
 
 ## Zendesk Integration
 
-When a complaint is submitted:
+**Flow:**
+1. File uploads to Zendesk (`POST /api/v2/uploads.json`)
+2. Get upload token for each file
+3. Create ticket in Zendesk with comment containing files
+4. Files appear in ticket comment (not as direct attachments)
+5. Complaint simultaneously saved to MongoDB
 
-1. **Stored in MongoDB** immediately (guaranteed)
-2. **Zendesk ticket created** with:
-   - Complaint category and details
-   - Complainant email
-   - Confidentiality flag
-   - All answers formatted for readability
-   - Link back to MongoDB ID
+**Important:** Files are attached to a comment within the ticket, not directly to the ticket itself.
 
-3. **Graceful fallback**: If Zendesk fails, complaint still saves to MongoDB
+### Setup Checklist
+- [ ] Create Zendesk account (trial or paid)
+- [ ] Go to Admin → Apps and Integrations → APIs → Zendesk API
+- [ ] Toggle ON "Allow API token access"
+- [ ] Create new API token
+- [ ] Add credentials to `.env`:
+  - ZENDESK_SUBDOMAIN (from your URL: subdomain.zendesk.com)
+  - ZENDESK_EMAIL (admin email)
+  - ZENDESK_API_TOKEN (from step above)
 
-### Zendesk Setup
+## Deployment
 
-1. Create a free Zendesk trial account
-2. Go to **Admin** → **Apps and Integrations** → **APIs** → **Zendesk API**
-3. **Enable** "Allow API token access"
-4. Create a new API token
-5. Add to `.env`:
-   ```env
-   ZENDESK_SUBDOMAIN=your_subdomain
-   ZENDESK_EMAIL=your_email
-   ZENDESK_API_TOKEN=your_token
-   ```
+### Option 1: Render (Recommended)
 
-## Design Standards
+**Backend + Frontend (Single Server)**
 
-Follows GOTS brand guidelines as documented in `/ClaudeCode/README.md`:
+1. Connect GitHub repo to Render: https://render.com
+2. Create Web Service:
+   - **Build Command:** `npm run build`
+   - **Start Command:** `npm start`
+   - **Environment Variables:** Set all from `.env`
+3. Deploy ✅
 
-- **Colors**: GOTS green, dark gray, white, light gray
-- **Typography**: System font stack with proper hierarchy
-- **Responsive**: Mobile-first, tested on 320px - 1920px
-- **Accessibility**: WCAG AA compliance
-  - Color contrast ≥4.5:1
-  - Focus indicators visible
-  - Keyboard navigation support
-  - Semantic HTML
+Cost: Free tier available (512MB RAM, no idle timeout during free tier)
 
-See `/ClaudeCode/README.md` for complete design specifications.
+### Option 2: Railway
+```bash
+railway link
+railway up
+```
 
-## Technologies
+### Option 3: Self-Hosted
+```bash
+npm run build
+npm start
+```
 
-- **Frontend**: React 18, Redux Toolkit, Tailwind CSS, Vite
-- **Backend**: Node.js, Express
-- **Database**: MongoDB Atlas
-- **File Storage**: MongoDB GridFS
-- **Integrations**: Zendesk API
-- **Build**: Vite
-- **Styling**: Tailwind CSS v4
+Set environment variables and expose port 3000 via reverse proxy (nginx, Apache).
+
+## Environment Variables (Production)
+
+```env
+PORT=3000
+NODE_ENV=production
+
+MONGODB_USER=RahulTrialAdmin
+MONGODB_PASSWORD=<secure-password>
+MONGODB_CLUSTER=gots-trial.jfoz0n7.mongodb.net
+MONGODB_DATABASE=gots_complaints
+MONGODB_APP_NAME=GOTS-Complaints
+
+ZENDESK_SUBDOMAIN=<your-subdomain>
+ZENDESK_EMAIL=<admin-email>
+ZENDESK_API_TOKEN=<api-token>
+```
+
+## Testing
+
+### Local Integration Test
+```bash
+npm run dev
+# In another terminal:
+curl -s http://localhost:3000/api/health | jq .
+```
+
+### Production Smoke Test
+```bash
+npm run build
+npm start
+# Visit http://localhost:3000
+```
+
+### Submit Test Complaint (via API)
+```bash
+curl -X POST http://localhost:3000/api/complaints \
+  -F "category=labor" \
+  -F "email=test@example.com" \
+  -F "name=Test User" \
+  -F "organization=Test Co" \
+  -F "confidential=false" \
+  -F 'answers={"overtime":"12 hour shifts","wages":"Low","discrimination":"No","forced_labor":"No"}' \
+  -F "files=@evidence.txt"
+```
+
+## Troubleshooting
+
+### "Cannot connect to MongoDB"
+- Verify credentials in `.env`
+- Check IP whitelist in MongoDB Atlas (add `0.0.0.0/0` for open access)
+- Ensure password special characters are URL-encoded in connection string
+
+### "Zendesk integration failing"
+- Verify API token is active in Zendesk Admin panel
+- Ensure "Allow API token access" is enabled
+- Check email matches the account that created the token
+- Test with: `curl http://localhost:3000/api/zendesk-test`
+
+### "Files not uploading to Zendesk"
+- Check file size (max 10MB)
+- Verify file type is allowed (JPG, PNG, GIF, PDF, DOCX, XLSX, TXT)
+- Check MongoDB GridFS is initialized (runs automatically on first file)
+- Check Zendesk quota hasn't been exceeded
+
+### "Port 3000 already in use"
+```bash
+lsof -i :3000  # Find process
+kill -9 <PID>   # Kill it
+```
 
 ## Performance
 
-- **First Load**: < 1s (Vite)
-- **Form Submit**: < 2s (API + MongoDB + Zendesk)
-- **File Upload**: 5MB file ≈ 1s (depends on connection)
-- **Database**: MongoDB Atlas free tier (512MB)
+- **First Load:** < 1s (Vite optimized)
+- **Form Submit:** < 2s (MongoDB + Zendesk)
+- **File Upload:** ~1s per 5MB
+- **API Response:** < 100ms
 
 ## Browser Support
 
 - Chrome/Edge: Latest
 - Firefox: Latest
 - Safari: Latest
-- Mobile browsers: iOS Safari, Chrome Mobile
-- Minimum: ES2020 support
+- Mobile: iOS Safari, Chrome Mobile
 
-## Security
+## Git Repository
 
-- ✅ Environment variables for all secrets (never committed)
-- ✅ File type validation (whitelist of allowed formats)
-- ✅ File size limits enforced (10MB per file)
-- ✅ Input validation and sanitization
-- ✅ CORS protection
-- ✅ MongoDB Atlas IP whitelisting
-- ✅ GridFS for secure file storage
-- ✅ No sensitive data in client-side code
-
-## Troubleshooting
-
-### "Cannot connect to MongoDB"
-- Verify credentials in `.env`
-- Check IP whitelist in MongoDB Atlas
-- Ensure password special characters are URL-encoded
-- Test with: `npm run test-mongo`
-
-### "Zendesk integration failing"
-- Verify API token is correct and active
-- Ensure "Allow API token access" is enabled in Zendesk
-- Check email matches the account that created the token
-- Test with: `curl -u "email/token:api_token" https://subdomain.zendesk.com/api/v2/users/me.json`
-
-### "File upload not working"
-- Check file size (max 10MB)
-- Verify file type is in whitelist (JPG, PNG, GIF, PDF, DOCX, XLSX, TXT)
-- Ensure MongoDB GridFS is initialized
-- Check browser console for errors
-
-### "Frontend won't load"
-- Verify Vite is running on port 5173
-- Check for port conflicts: `lsof -i :5173`
-- Clear browser cache
-- Try different browser
-
-## Deployment
-
-### Frontend (Vite Build)
-
-```bash
-npm run build
-# Output: dist/
-```
-
-Deploy `dist/` to:
-- Netlify (auto-deploy from git)
-- Vercel
-- AWS S3 + CloudFront
-- Any static hosting
-
-### Backend (Express + MongoDB)
-
-```bash
-NODE_ENV=production npm run server
-```
-
-Deploy to:
-- Render
-- Railway
-- Heroku
-- AWS EC2
-- DigitalOcean
-- Any Node.js host
-
-Make sure to set all environment variables in production.
-
-## Testing
-
-### Integration Test
-
-```bash
-node test-full-integration.js
-```
-
-Tests MongoDB, Zendesk, and API endpoint all together.
-
-### Manual Testing Checklist
-
-- [ ] Fill form through all 7 steps
-- [ ] Submit complaint
-- [ ] Verify in MongoDB
-- [ ] Check Zendesk ticket created
-- [ ] Download and view files in Zendesk
-- [ ] Test on mobile browser
-- [ ] Test file upload with drag-drop
-- [ ] Test with all 5 complaint categories
-
-## Future Enhancements
-
-- [ ] Multi-language support (Hindi, Turkish, Tamil)
-- [ ] Email notifications on status updates
-- [ ] Complaint tracking dashboard
-- [ ] Admin review interface
-- [ ] Bulk complaint import
-- [ ] Advanced filtering and search
-- [ ] Compliance report generation
-- [ ] Mobile app (React Native)
-- [ ] Two-factor authentication
-- [ ] Encrypted file storage
+- **URL:** https://github.com/rahulcodingtrial/GOTS-complaints-rahul
+- **Branch:** master
+- **Latest:** Production-ready single-server deployment
 
 ## Scripts
 
 ```bash
-npm run dev          # Start dev server (Vite + Express)
-npm run server       # Backend only
-npm run build        # Production build
-npm run preview      # Preview production build
+npm run dev        # Dev server (Vite + Express concurrent)
+npm run build      # Build frontend for production
+npm run start      # Start production server
+npm run server     # Backend only (without Vite)
+npm run preview    # Preview production build
 ```
 
-## Environment Variables
+## Design Compliance
 
-See `.env.example` for complete list. Required:
+Follows GOTS brand standards defined in `/ClaudeCode/README.md`:
+- Color palette: GOTS green (#10B981), dark gray, white
+- Typography: System font stack
+- Responsive: Mobile-first, tested on 320px–1920px
+- Accessibility: WCAG AA compliance
 
-```env
-MONGODB_USER
-MONGODB_PASSWORD
-MONGODB_CLUSTER
-MONGODB_DATABASE
-ZENDESK_SUBDOMAIN
-ZENDESK_EMAIL
-ZENDESK_API_TOKEN
+## Known Limitations
+
+- Zendesk file attachments appear in ticket comments, not as direct ticket attachments
+- Trial accounts may have API rate limits
+- GridFS stores files up to 16MB (MongoDB max BSON document size)
+
+## Maintenance
+
+### Regular Tasks
+- Monitor MongoDB storage (free tier: 512MB limit)
+- Verify Zendesk API token hasn't expired (monthly check)
+- Review complaint volume and storage capacity
+- Monitor application logs for errors
+
+### Updating Dependencies
+```bash
+npm outdated
+npm update
+npm audit fix
 ```
 
-## Contributing
+## Support & Handoff
 
-1. Create feature branch: `git checkout -b feature/my-feature`
-2. Commit changes: `git commit -am 'Add feature'`
-3. Push to branch: `git push origin feature/my-feature`
-4. Open pull request
+**For IT Team:**
+1. Clone repo: `git clone https://github.com/rahulcodingtrial/GOTS-complaints-rahul.git`
+2. Install: `npm install`
+3. Configure `.env` with production credentials
+4. Deploy to Render or preferred platform
+5. Test integration with Zendesk
+6. Set up monitoring and alerts
+7. Document any custom configurations
 
-## License
-
-Internal GOTS Project - All rights reserved
-
-## Support
-
-For issues and questions:
-- Check existing documentation in this README
-- Review `/ClaudeCode/README.md` for design standards
-- Check browser console for client-side errors
-- Review server logs for backend errors
-- Test MongoDB connection separately
-
-## Version History
-
-- **1.0.0** (2026-06-14): Initial release
-  - 7-step wizard interface
-  - 5 complaint categories
-  - File upload with GridFS
-  - Zendesk integration
-  - MongoDB storage
-  - GOTS brand compliance
+**Questions?** Check `/ClaudeCode/README.md` for GOTS-wide standards.
 
 ---
 
-**Last Updated**: 2026-06-14  
-**Status**: Production Ready  
-**Maintainer**: GOTS Team
+**Version:** 1.0.0  
+**Status:** Production Ready  
+**Last Updated:** 2026-06-15  
+**Deployment:** Single-server (Express + React)
